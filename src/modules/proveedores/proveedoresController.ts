@@ -3,7 +3,7 @@ import { proveedoresServices } from "../../services/proveedores/proveedoresServi
 import type { AuthRequest } from "@/middlewares/auth";
 
 export const proveedoresController = {
-    async getAll (req: AuthRequest, res: Response, next: NextFunction) {
+    async getAll (_req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const proveedores = await proveedoresServices.getAll()
             res.json(proveedores)
