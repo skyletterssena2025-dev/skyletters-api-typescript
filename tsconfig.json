@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "types": ["jest", "node"],
     "target": "ES2022",
-    "module": "commonjs",
+    "module": "node16",
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
@@ -23,7 +25,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
