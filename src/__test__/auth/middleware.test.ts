@@ -1,7 +1,7 @@
-import { prisma } from "../../config/database";
-import { type AuthRequest } from "../../middlewares/auth";
 import { requireRole } from "../../middlewares/roles";
+import { authMiddleware, type AuthRequest } from "../../middlewares/auth";
 import { Response, NextFunction } from "express";
+import { prisma } from "../../config/database";
 
 jest.mock("../../services/auth/jwtService");
 jest.mock("../../config/database", () => ({
@@ -11,46 +11,78 @@ jest.mock("../../config/database", () => ({
     },
   },
 }));
-describe("authController", () => {
+
+describe("Middleware de Autenticación y Roles", () => {
   let mockReq: Partial<AuthRequest>;
   let mockRes: Partial<Response>;
   let mockNext: NextFunction;
 
   beforeEach(() => {
     mockReq = {
-      body: {},
+      headers: {},
     };
-    mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      send: jest.fn().mockReturnThis(),
-    };
+
+    mockRes = {};
     mockNext = jest.fn();
     jest.clearAllMocks();
   });
-  describe("requireRole - control De Permisos", () => {
-    it("Debe permitir el acceso si el usuario tiene el rol requerido", async () => {
+
+
+  describe("authMiddleware", () => {
+    it("debe rechazar si no hay token", async () => {
+      mockReq.headers = {};
+
+      authMiddleware(mockReq as AuthRequest, mockRes as Response, mockNext);
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Token de acceso no proporcionado"
+        })
+      )
+    });
+
+    it("debe rechazar si el token no comienza con 'Bearer '", async () => {
+      mockReq.headers = { authorization: "Basic token123" };
+
+      authMiddleware(mockReq as AuthRequest, mockRes as Response, mockNext);
+      expect(mockNext).toHaveBeenCalledWith(expect.any(Object));
+    });
+  });
+
+  describe("requireRole - Control de permisos", () => {
+    it("debe rechazar si no hay usuario autenticado", async () => {
       const middleware = requireRole("crear");
+      mockReq.user = undefined;
+
+      await middleware(mockReq as AuthRequest, mockRes as Response, mockNext);
+      expect(mockNext).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Autenticación requerida",
+        })
+      );
+    });
+
+    it("debe permitir acceso si el usuario tiene el permiso requerido", async () => {
+      const middleware = requireRole("usuarios");
       mockReq.user = {
         sub: 1,
-        email: "test@example.com",
+        email: "admin@skyletters.com",
         rol: "admin",
         tipo: "empleado",
-      };
-      const mockRole = {
+      }
+
+      const mockRol = {
         id: 1,
-        nombre: "admin",
-        listaPermisos: "crear,leer,actualizar,eliminar",
-        listaRol: "admin",
-        descripcion: "Administrador con todos los permisos",
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        nombre: "Administrador",
+        listaPermisos: "usuarios,roles,parametrizacion,asientos,reportes,impuestos,conciliacion",
+        listaRol: "admin,Administrador",
+        descripcion: "Rol con todos los permisos del sistema"
       };
-      (prisma.rolesYPermisos.findFirst as jest.Mock).mockResolvedValue(
-        mockRole,
-      );
+
+      (prisma.rolesYPermisos.findFirst as jest.Mock).mockResolvedValue(mockRol);
+
       await middleware(mockReq as AuthRequest, mockRes as Response, mockNext);
-      expect(mockNext).toHaveBeenCalled();
+
+      expect(mockNext).toHaveBeenCalledWith();
     });
   });
 });

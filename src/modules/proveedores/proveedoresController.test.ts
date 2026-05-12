@@ -20,7 +20,7 @@ describe("proveedoresController", () => {
         direccionProveedor: "Calle Falsa 123",
         ciudadProveedor: "Ciudad Ejemplo",
         estadoProveedor: true,
-        razonSocial: "Proveedor Ejemplo S.A.",
+        razonSocialProveedor: "Proveedor Ejemplo S.A.",
         createdAt: new Date(),
         updatedAt: new Date(),
     };
@@ -86,7 +86,7 @@ describe("proveedoresController", () => {
                 direccionProveedor: mockProveedor.direccionProveedor,
                 ciudadProveedor: mockProveedor.ciudadProveedor,
                 estadoProveedor: mockProveedor.estadoProveedor,
-                razonSocial: mockProveedor.razonSocial,
+                razonSocialProveedor: mockProveedor.razonSocialProveedor,
             };
             await proveedoresController.create(mockReq as AuthRequest, mockRes as Response, mockNext);
             expect(proveedoresServices.create).toHaveBeenCalledWith(mockReq.body);
@@ -104,7 +104,7 @@ describe("proveedoresController", () => {
                 direccionProveedor: mockProveedor.direccionProveedor,
                 ciudadProveedor: mockProveedor.ciudadProveedor,
                 estadoProveedor: mockProveedor.estadoProveedor,
-                razonSocial: mockProveedor.razonSocial,
+                razonSocialProveedor: mockProveedor.razonSocialProveedor,
             };
             await proveedoresController.create(mockReq as AuthRequest, mockRes as Response, mockNext);
             expect(proveedoresServices.create).toHaveBeenCalledWith(mockReq.body);
