@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { proveedoresController } from "./proveedoresController";
+import { proveedoresController } from "../../modules/proveedores/proveedoresController";
 import { proveedoresServices } from "../../services/proveedores/proveedoresServices";
 import type { AuthRequest } from "@/middlewares/auth";
 import type { Proveedor } from "@prisma/client";
@@ -20,7 +20,7 @@ describe("proveedoresController", () => {
         direccionProveedor: "Calle Falsa 123",
         ciudadProveedor: "Ciudad Ejemplo",
         estadoProveedor: true,
-        razonSocialProveedor: "Proveedor Ejemplo S.A.",
+        razonSocial: "Proveedor Ejemplo S.A.",
         createdAt: new Date(),
         updatedAt: new Date(),
     };
@@ -86,7 +86,7 @@ describe("proveedoresController", () => {
                 direccionProveedor: mockProveedor.direccionProveedor,
                 ciudadProveedor: mockProveedor.ciudadProveedor,
                 estadoProveedor: mockProveedor.estadoProveedor,
-                razonSocialProveedor: mockProveedor.razonSocialProveedor,
+                razonSocial: mockProveedor.razonSocial,
             };
             await proveedoresController.create(mockReq as AuthRequest, mockRes as Response, mockNext);
             expect(proveedoresServices.create).toHaveBeenCalledWith(mockReq.body);
@@ -104,7 +104,7 @@ describe("proveedoresController", () => {
                 direccionProveedor: mockProveedor.direccionProveedor,
                 ciudadProveedor: mockProveedor.ciudadProveedor,
                 estadoProveedor: mockProveedor.estadoProveedor,
-                razonSocialProveedor: mockProveedor.razonSocialProveedor,
+                razonSocial: mockProveedor.razonSocial,
             };
             await proveedoresController.create(mockReq as AuthRequest, mockRes as Response, mockNext);
             expect(proveedoresServices.create).toHaveBeenCalledWith(mockReq.body);
