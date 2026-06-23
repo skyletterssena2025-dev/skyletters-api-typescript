@@ -1,9 +1,20 @@
-node_modules
-dist
-.env
-.env.local
-*.log
+# OS
 .DS_Store
-coverage
-.vscode
-.idea
+
+# Dependencias
+**/node_modules/
+
+# Builds
+**/dist/
+
+# Variables de entorno / secretos
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Logs
+*.log
+
+# Tooling local (Claude Code)
+.claude/
+CLAUDE.md

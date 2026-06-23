@@ -1,0 +1,508 @@
+// Prisma schema - Skyletters API
+// Base: Usuario (abstract) → UsuarioAdmin, UsuarioCont, UsuarioAux
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = []
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ========== Usuario (base) ==========
+model Usuario {
+  id                Int       @id @default(autoincrement())
+  nombreUsuario     String    @map("nombre_usuario")
+  correoUsuario     String    @unique @map("correo_usuario")
+  contrasenaUsuario String    @map("contrasena_usuario")
+  rolUsuario        String    @map("rol_usuario")
+  estadoUsuario     Boolean   @default(true) @map("estado_usuario")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // Discriminador: admin | cont | aux
+  tipoUsuario String @map("tipo_usuario")
+
+  admin UsuarioAdmin?
+  cont  UsuarioCont?
+  aux   UsuarioAux?
+  persona Persona?
+
+  refreshTokens RefreshToken[]
+  sesiones      SesionUsuario[]
+
+  @@map("usuarios")
+}
+
+// ========== UsuarioAdmin (extends Usuario) ==========
+model UsuarioAdmin {
+  id                    Int     @id @default(autoincrement())
+  idUsuario             Int     @unique @map("id_usuario")
+  nivelConfidencialidad String  @map("nivel_confidencialidad")
+  permisosAdmin         String  @map("permisos_admin")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  usuario Usuario @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@map("usuarios_admin")
+}
+
+// ========== UsuarioCont (extends Usuario) ==========
+model UsuarioCont {
+  id                Int      @id @default(autoincrement())
+  idUsuario         Int      @unique @map("id_usuario")
+  areaContable      String   @map("area_contable")
+  fechaIngreso      DateTime @map("fecha_ingreso")
+  estadoUsuarioCont Boolean  @default(true) @map("estado_usuario_cont")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  usuario Usuario @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@map("usuarios_cont")
+}
+
+// ========== UsuarioAux (extends Usuario) ==========
+model UsuarioAux {
+  id                 Int      @id @default(autoincrement())
+  idUsuario          Int      @unique @map("id_usuario")
+  areaContable       String   @map("area_contable")
+  fechaIngreso       DateTime @map("fecha_ingreso")
+  tarjetaUsuarioAux  Int      @map("tarjeta_usuario_aux")
+  estadoUsuarioAux   Boolean  @default(true) @map("estado_usuario_aux")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  usuario Usuario @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@map("usuarios_aux")
+}
+
+// ========== Sesión / Refresh tokens ==========
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  idUsuario Int      @map("id_usuario")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model SesionUsuario {
+  id        Int      @id @default(autoincrement())
+  idUsuario Int      @map("id_usuario")
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@map("sesiones_usuario")
+}
+
+// ========== RolesYPermisos ==========
+model RolesYPermisos {
+  id             Int    @id @default(autoincrement())
+  nombre         String
+  listaPermisos  String @map("lista_permisos")
+  listaRol       String @map("lista_rol")
+  descripcion    String
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("roles_y_permisos")
+}
+
+// ========== ParametrizacionSistema ==========
+model ParametrizacionSistema {
+  id                 Int     @id @default(autoincrement())
+  nombreEmpresa      String  @map("nombre_empresa")
+  direccionEmpresa   String  @map("direccion_empresa")
+  telefonoEmpresa    String  @map("telefono_empresa")
+  anioInicialEmpresa Int     @map("anio_inicial_empresa")
+  tipoMoneda         String  @map("tipo_moneda")
+  emailEmpresa       String  @map("email_empresa")
+  manejaImpuesto     Boolean @map("maneja_impuesto")
+  impuestos          Int     @default(0)
+  cuentasContables   Int     @map("cuentas_contables") @default(0)
+  documentoContable  String  @map("documento_contable")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("parametrizacion_sistema")
+}
+
+// ========== AsientoContable ==========
+model AsientoContable {
+  id                    Int      @id @default(autoincrement())
+  fechaCreacionRegistro  DateTime @map("fecha_creacion_registro")
+  numeroFactura         Int      @map("numero_factura")
+  descripcion           String
+  usuarioCreador        String   @map("usuario_creador")
+  fechaModificacion     DateTime @map("fecha_modificacion")
+  // Resumen legible "cuenta:valor;…" (compatibilidad). La verdad contable vive en `movimientos`.
+  listaMovimiContable   String   @map("lista_movimi_contable")
+  // Partida doble estructurada:
+  tipoOrigen            String   @default("MANUAL") @map("tipo_origen") // FACTURA | NOTA | PAGO | COMPRA | MANUAL
+  idOrigen              Int?     @map("id_origen")                       // id del documento origen (idempotencia)
+  totalDebito           Float    @default(0) @map("total_debito")
+  totalCredito          Float    @default(0) @map("total_credito")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  movimientos MovimientoContable[]
+
+  // Un solo asiento por documento origen (MANUAL admite varios: idOrigen NULL).
+  @@unique([tipoOrigen, idOrigen], name: "origen_unico")
+  @@map("asientos_contables")
+}
+
+// Línea de un asiento contable (débito o crédito sobre una cuenta del PUC).
+model MovimientoContable {
+  id           Int      @id @default(autoincrement())
+  idAsiento    Int      @map("id_asiento")
+  codigoCuenta String   @map("codigo_cuenta")
+  nombreCuenta String   @map("nombre_cuenta")
+  debito       Float    @default(0)
+  credito      Float    @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  asiento AsientoContable @relation(fields: [idAsiento], references: [id], onDelete: Cascade)
+
+  @@map("movimientos_contables")
+}
+
+// Plan Unico de Cuentas (PUC Colombia). Catalogo de cuentas contables.
+model CuentaPUC {
+  id               Int      @id @default(autoincrement())
+  codigo           String   @unique
+  nombre           String
+  clase            Int      // primer digito: 1 Activo, 2 Pasivo, 3 Patrimonio, 4 Ingresos, 5 Gastos, 6 Costos…
+  naturaleza       String   // DEBITO | CREDITO
+  aceptaMovimiento Boolean  @default(true) @map("acepta_movimiento")
+  estado           Boolean  @default(true)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("cuentas_puc")
+}
+
+// ========== ReporteFinanciero ==========
+model ReporteFinanciero {
+  id                Int      @id @default(autoincrement())
+  tipo              String
+  formato           String
+  movimientoContable String  @map("movimiento_contable")
+  descripcion       String
+  periodoInicio     DateTime @map("periodo_inicio")
+  periodoFin        DateTime @map("periodo_fin")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("reportes_financieros")
+}
+
+// ========== Impuestos ==========
+model Impuesto {
+  id           Int      @id @default(autoincrement())
+  nombre       String
+  tipo         String
+  porcentaje   Float
+  fechaInicio  DateTime @map("fecha_inicio")
+  fechaFin     DateTime @map("fecha_fin")
+  baseImponible Float   @map("base_imponible")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("impuestos")
+}
+
+// ========== ConciliacionBancaria ==========
+model ConciliacionBancaria {
+  id                    Int     @id @default(autoincrement())
+  cuentaBancaria        String  @map("cuenta_bancaria")
+  banco                 String
+  periodoInicio         DateTime @map("periodo_inicio")
+  periodoFin            DateTime @map("periodo_fin")
+  movimientosConciliados Int    @map("movimientos_conciliados") @default(0)
+  saldoBancario         Float   @map("saldo_bancario")
+  saldoContable         Float   @map("saldo_contable")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  extracto MovimientoBancario[]
+
+  @@map("conciliacion_bancaria")
+}
+
+// Linea del extracto bancario cargado para una conciliacion. valor: + ingreso, - egreso.
+model MovimientoBancario {
+  id             Int      @id @default(autoincrement())
+  idConciliacion Int      @map("id_conciliacion")
+  fecha          DateTime
+  descripcion    String
+  referencia     String?
+  valor          Float    // positivo = consignacion/ingreso, negativo = retiro/egreso
+  conciliado     Boolean  @default(false)
+  idMovContable  Int?     @map("id_mov_contable") // movimiento contable cruzado
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conciliacion ConciliacionBancaria @relation(fields: [idConciliacion], references: [id], onDelete: Cascade)
+
+  @@map("movimientos_bancarios")
+}
+
+// ========== ResolucionFacturacion (Resolución DIAN por tipo de documento) ==========
+// Cada tipo de documento (factura de venta, nota débito, nota crédito) tiene su
+// propia resolución, rango de numeración, código de autorización y vigencia.
+model ResolucionFacturacion {
+  id                 Int      @id @default(autoincrement())
+  tipoDocumento      String   @map("tipo_documento") // FACTURA_VENTA | NOTA_DEBITO | NOTA_CREDITO
+  resolucion         String   // número de la resolución DIAN
+  codigoAutorizacion String?  @map("codigo_autorizacion")
+  prefijo            String?
+  numeroInicial      Int      @map("numero_inicial")
+  numeroFinal        Int      @map("numero_final")
+  vigenciaDesde      DateTime @map("vigencia_desde")
+  vigenciaHasta      DateTime @map("vigencia_hasta")
+  estado             Boolean  @default(true)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("resoluciones_facturacion")
+}
+
+// ========== Persona ==========
+model Persona {
+  id                     Int      @id @default(autoincrement())
+  idUsuario             Int     @unique @map("id_usuario")
+  nombrePersona          String   @map("nombre_persona")
+  apellidoPersona        String   @map("apellido_persona")
+  correoPersona          String   @unique @map("correo_persona")
+  direccionPersona       String   @map("direccion_persona")
+  telefonoPersona        String   @map("telefono_persona")
+  generoPersona          String   @map("genero_persona")
+  fechaNacimientoPersona String   @map("fecha_nacimiento_persona")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  usuario  Usuario   @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@map("personas")
+}
+
+// ========== Factura ==========
+model Factura {
+  id                     Int      @id @default(autoincrement())
+  numeroFactura          Int      @unique @map("numero_factura")
+  idCliente              Int      @map("id_cliente")
+  fechaFactura           DateTime @map("fecha_factura")
+  detalleProducto        String   @db.Text @map("detalle_producto")
+  subtotalFactura        Float    @map("subtotal_factura")
+  impuestoFactura        Float    @map("impuesto_factura")
+  totalFactura           Float    @map("total_factura")
+  formaPago              String   @map("forma_pago")
+  estado                 String   @default("PENDIENTE") // PENDIENTE | PARCIAL | PAGADA | ANULADA
+  saldoPendiente         Float    @default(0) @map("saldo_pendiente")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  cliente  Cliente          @relation(fields: [idCliente], references: [id], onDelete: Restrict)
+  detalles FacturaDetalle[]
+  notas    NotaContable[]
+  pagos    Pago[]
+
+  @@map("facturas")
+}
+
+// ========== Pago / Abono (cartera CxC) ==========
+model Pago {
+  id        Int      @id @default(autoincrement())
+  idFactura Int      @map("id_factura")
+  fecha     DateTime
+  monto     Float
+  formaPago String   @map("forma_pago")
+  nota      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  factura Factura @relation(fields: [idFactura], references: [id], onDelete: Cascade)
+
+  @@map("pagos")
+}
+
+// ========== MovimientoInventario (kardex) ==========
+model MovimientoInventario {
+  id              Int      @id @default(autoincrement())
+  idProducto      Int      @map("id_producto")
+  tipo            String   // ENTRADA | SALIDA
+  cantidad        Int
+  saldoResultante Int      @map("saldo_resultante")
+  motivo          String
+  fecha           DateTime @default(now())
+
+  producto Producto @relation(fields: [idProducto], references: [id], onDelete: Cascade)
+
+  @@map("movimientos_inventario")
+}
+
+// ========== Compra (Factura de compra a proveedor — IVA descontable) ==========
+model Compra {
+  id              Int      @id @default(autoincrement())
+  numeroFactura   Int      @map("numero_factura") // número de la factura del proveedor
+  idProveedor     Int      @map("id_proveedor")
+  fechaCompra     DateTime @map("fecha_compra")
+  detalleProducto String   @db.Text @map("detalle_producto")
+  subtotal        Float
+  impuesto        Float // IVA descontable − retenciones practicadas
+  total           Float
+  formaPago       String   @map("forma_pago")
+  estado          String   @default("PENDIENTE") // PENDIENTE | PARCIAL | PAGADA | ANULADA
+  saldoPendiente  Float    @default(0) @map("saldo_pendiente")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  proveedor Proveedor       @relation(fields: [idProveedor], references: [id], onDelete: Restrict)
+  detalles  CompraDetalle[]
+
+  @@map("compras")
+}
+
+model CompraDetalle {
+  id         Int      @id @default(autoincrement())
+  idCompra   Int      @map("id_compra")
+  idProducto Int?     @map("id_producto")
+  nombre     String
+  cantidad   Int
+  precio     Float
+  descuento  Float    @default(0)
+  subtotal   Float
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  compra Compra @relation(fields: [idCompra], references: [id], onDelete: Cascade)
+
+  @@map("compra_detalles")
+}
+
+// ========== NotaContable (Nota crédito / débito sobre una factura) ==========
+model NotaContable {
+  id              Int      @id @default(autoincrement())
+  tipo            String   // CREDITO | DEBITO
+  numero          Int
+  idFactura       Int      @map("id_factura")
+  idCliente       Int      @map("id_cliente")
+  fecha           DateTime
+  motivo          String
+  detalleProducto String   @db.Text @map("detalle_producto")
+  subtotal        Float
+  impuesto        Float
+  total           Float
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  factura  Factura       @relation(fields: [idFactura], references: [id], onDelete: Cascade)
+  cliente  Cliente       @relation(fields: [idCliente], references: [id], onDelete: Cascade)
+  detalles NotaDetalle[]
+
+  @@map("notas_contables")
+}
+
+// ========== NotaDetalle (líneas de la nota) ==========
+model NotaDetalle {
+  id        Int     @id @default(autoincrement())
+  idNota    Int     @map("id_nota")
+  idProducto Int?   @map("id_producto")
+  nombre    String
+  cantidad  Int
+  precio    Float
+  descuento Float   @default(0)
+  subtotal  Float
+  createdAt DateTime @default(now()) @map("created_at")
+
+  nota NotaContable @relation(fields: [idNota], references: [id], onDelete: Cascade)
+
+  @@map("nota_detalles")
+}
+
+// ========== FacturaDetalle (líneas de la factura) ==========
+model FacturaDetalle {
+  id          Int     @id @default(autoincrement())
+  idFactura   Int     @map("id_factura")
+  idProducto  Int?    @map("id_producto")
+  nombre      String
+  cantidad    Int
+  precio      Float
+  descuento   Float   @default(0)
+  subtotal    Float
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  factura Factura @relation(fields: [idFactura], references: [id], onDelete: Cascade)
+
+  @@map("factura_detalles")
+}
+
+// ========== Cliente ==========
+model Cliente {
+  id                    Int             @id @default(autoincrement())
+  nombreCliente         String          @map("nombre_cliente")
+  razonSocial           String          @map("razon_social")
+  nitCliente            String          @map("nit_cliente")
+  correoCliente         String          @map("correo_cliente")
+  direccionCliente      String          @map("direccion_cliente")
+  telefonoCliente       String          @map("telefono_cliente")
+  ciudadCliente         String          @map("ciudad_cliente")
+  estadoCliente         Boolean         @default(true)@map("estado_cliente")
+  // CSV de IDs de Impuesto que aplican a este tercero (responsabilidades tributarias)
+  impuestosAplicables   String          @default("") @map("impuestos_aplicables")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  facturas Factura[]
+  notas    NotaContable[]
+
+  @@map("clientes")
+}
+ // ========== Proveedor ========== 
+ model Proveedor{
+  id                    Int             @id @default(autoincrement())
+ nombreProveedor         String          @map("nombre_proveedor")
+  razonSocial           String          @map("razon_social")
+  nitProveedor            String          @map("nit_proveedor")
+  correoProveedor        String          @map("correo_proveedor")
+  direccionProveedor      String          @map("direccion_proveedor")
+  telefonoProveedor      String          @map("telefono_proveedor")
+  ciudadProveedor        String          @map("ciudad_proveedor")
+  estadoProveedor        Boolean         @default(true)@map("estado_proveedor")
+  // CSV de IDs de Impuesto que aplican a este tercero (responsabilidades tributarias)
+  impuestosAplicables    String          @default("") @map("impuestos_aplicables")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  compras Compra[]
+
+@@map("proveedores")
+
+ }
+
+// ========== Productos ==========
+model Producto{
+  id                    Int             @id @default(autoincrement())
+  codigoProducto        String          @unique @map("codigo_producto")
+  nombreProducto        String          @map("nombre_producto")
+  descripcionProducto   String          @map("descripcion_producto")
+  precioProducto        Float           @map("precio_producto")
+  // Stock: lo maneja el kardex (compras suman, ventas restan). No se digita a mano.
+  cantidadProducto      Int             @default(0) @map("cantidad_producto")
+  estadoProducto        Boolean         @default(true) @map("estado_producto")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  movimientos MovimientoInventario[]
+
+  @@map("productos")
+
+}
