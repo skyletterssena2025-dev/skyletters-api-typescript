@@ -6,48 +6,34 @@ import type { Usuario } from "@prisma/client";
 
 const SALT_ROUNDS = 10;
 
-export interface CreateUsuarioBase {
+// Datos opcionales de la persona asociada.
+export interface PersonaInput {
+  nombrePersona: string;
+  apellidoPersona: string;
+  correoPersona?: string;
+  direccionPersona?: string;
+  telefonoPersona?: string;
+  generoPersona?: string;
+  fechaNacimientoPersona?: string;
+}
+
+// Entrada de creacion: nucleo requerido + persona y campos de subtipo opcionales.
+export interface CreateUsuarioInput {
   nombreUsuario: string;
   correoUsuario: string;
   contrasenaUsuario: string;
   rolUsuario: string;
+  tipoUsuario: "admin" | "cont" | "aux";
   estadoUsuario?: boolean;
-  persona: CreatePersona;
-}
-
-export interface CreatePersona extends CreateUsuarioBase {
-  tipoUsuario: "persona";
-  nombrePersona: string;
-  apellidoPersona: string;
-  correoPersona: string;
-  direccionPersona: string;
-  telefonoPersona: string;
-  generoPersona: string;
-  fechaNacimientoPersona: string;
-}
-
-export interface CreateUsuarioAdminInput extends CreateUsuarioBase {
-  tipoUsuario: "admin";
-  nivelConfidencialidad: string;
-  permisosAdmin: string;
-}
-
-export interface CreateUsuarioContInput extends CreateUsuarioBase {
-  tipoUsuario: "cont";
-  areaContable: string;
-  fechaIngreso: Date;
+  persona?: PersonaInput;
+  nivelConfidencialidad?: string;
+  permisosAdmin?: string;
+  areaContable?: string;
+  fechaIngreso?: Date;
+  tarjetaUsuarioAux?: number;
   estadoUsuarioCont?: boolean;
-}
-
-export interface CreateUsuarioAuxInput extends CreateUsuarioBase {
-  tipoUsuario: "aux";
-  areaContable: string;
-  fechaIngreso: Date;
-  tarjetaUsuarioAux: number;
   estadoUsuarioAux?: boolean;
 }
-
-export type CreateUsuarioInput = CreatePersona | CreateUsuarioAdminInput | CreateUsuarioContInput | CreateUsuarioAuxInput;
 
 export const usuariosService = {
   async getAll(): Promise<Omit<Usuario, "contrasenaUsuario">[]> {
@@ -77,44 +63,47 @@ export const usuariosService = {
           tipoUsuario: input.tipoUsuario,
         },
       });
-      await tx.persona.create({
-        data: {
-          idUsuario: u.id,
-          nombrePersona: input.persona.nombrePersona,
-          apellidoPersona: input.persona.apellidoPersona,
-          correoPersona: input.persona.correoPersona,
-          direccionPersona: input.persona.direccionPersona,
-          telefonoPersona: input.persona.telefonoPersona,
-          generoPersona: input.persona.generoPersona,
-          fechaNacimientoPersona: input.persona.fechaNacimientoPersona,
-        },
-      });
-      if (input.tipoUsuario === "admin" && "nivelConfidencialidad" in input) {
+      // Persona: solo si se envian sus datos (es opcional).
+      if (input.persona?.nombrePersona) {
+        await tx.persona.create({
+          data: {
+            idUsuario: u.id,
+            nombrePersona: input.persona.nombrePersona,
+            apellidoPersona: input.persona.apellidoPersona,
+            correoPersona: input.persona.correoPersona ?? input.correoUsuario,
+            direccionPersona: input.persona.direccionPersona ?? "",
+            telefonoPersona: input.persona.telefonoPersona ?? "",
+            generoPersona: input.persona.generoPersona ?? "",
+            fechaNacimientoPersona: input.persona.fechaNacimientoPersona ?? "",
+          },
+        });
+      }
+      // Subtipo segun tipoUsuario, con defaults si no se envian los campos.
+      const hoy = new Date();
+      if (input.tipoUsuario === "admin") {
         await tx.usuarioAdmin.create({
           data: {
             idUsuario: u.id,
-            nivelConfidencialidad: input.nivelConfidencialidad,
-            permisosAdmin: input.permisosAdmin,
+            nivelConfidencialidad: input.nivelConfidencialidad ?? "medio",
+            permisosAdmin: input.permisosAdmin ?? "",
           },
         });
-      }
-      if (input.tipoUsuario === "cont" && "areaContable" in input) {
+      } else if (input.tipoUsuario === "cont") {
         await tx.usuarioCont.create({
           data: {
             idUsuario: u.id,
-            areaContable: input.areaContable,
-            fechaIngreso: input.fechaIngreso,
+            areaContable: input.areaContable ?? "General",
+            fechaIngreso: input.fechaIngreso ?? hoy,
             estadoUsuarioCont: input.estadoUsuarioCont ?? true,
           },
         });
-      }
-      if (input.tipoUsuario === "aux" && "tarjetaUsuarioAux" in input) {
+      } else if (input.tipoUsuario === "aux") {
         await tx.usuarioAux.create({
           data: {
             idUsuario: u.id,
-            areaContable: input.areaContable,
-            fechaIngreso: input.fechaIngreso,
-            tarjetaUsuarioAux: input.tarjetaUsuarioAux,
+            areaContable: input.areaContable ?? "General",
+            fechaIngreso: input.fechaIngreso ?? hoy,
+            tarjetaUsuarioAux: input.tarjetaUsuarioAux ?? 0,
             estadoUsuarioAux: input.estadoUsuarioAux ?? true,
           },
         });

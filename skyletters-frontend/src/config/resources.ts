@@ -203,8 +203,7 @@ export const RESOURCES: ResourceConfig[] = [
     label: "Usuarios",
     singular: "Usuario",
     icon: "fa-solid fa-user-gear",
-    // Edicion y bloqueo desde la UI; el alta tiene flujo propio (persona + tipo).
-    noCreate: true,
+    // Alta, edicion y bloqueo desde la UI mediante un formulario propio (UsuarioForm).
     fields: [
       { name: "nombreUsuario", label: "Nombre", type: "text" },
       { name: "correoUsuario", label: "Correo", type: "text" },

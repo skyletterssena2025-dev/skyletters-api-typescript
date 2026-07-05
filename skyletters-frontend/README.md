@@ -1,6 +1,6 @@
 # Skyletters Frontend
 
-Aplicacion web (SPA) del sistema contable Skyletters. React + TypeScript + Vite, con Material UI (DataGrid) para tablas y un sistema de modulos declarativo (config-driven) que genera la mayoria de las pantallas CRUD a partir de una sola configuracion. Consume la API REST de Skyletters. Incluye dashboard con graficas, libro diario de partida doble, conciliacion bancaria y gestion de roles/permisos y usuarios (editar/bloquear).
+Esta es mi aplicacion web (SPA) del sistema contable Skyletters. La hice con React + TypeScript + Vite, con Material UI (DataGrid) para tablas y un sistema de modulos declarativo (config-driven) con el que genero la mayoria de las pantallas CRUD a partir de una sola configuracion. Consume mi API REST de Skyletters. Incluye dashboard con graficas, libro diario de partida doble, conciliacion bancaria y gestion de roles/permisos y usuarios (crear/editar/bloquear).
 
 ## Stack
 
@@ -8,13 +8,13 @@ Aplicacion web (SPA) del sistema contable Skyletters. React + TypeScript + Vite,
 - Vite (dev server y build)
 - React Router v6 (ruteo y rutas protegidas)
 - Material UI: `@mui/x-data-grid` (tablas), `@mui/material` (Autocomplete, tema)
-- Font Awesome 6 (iconos; no se usan emojis)
+- Font Awesome 6 (iconos; no uso emojis)
 - `fetch` nativo (sin axios) con manejo de token JWT y refresh automatico
 
 ## Requisitos
 
 - Node.js >= 18
-- La API corriendo. En desarrollo local la API se levanta en el puerto 3100:
+- Mi API corriendo. En desarrollo local levanto la API en el puerto 3100:
   `cd ../skyletters-api-typescript && PORT=3100 npm run start`
 
 ## Ejecucion
@@ -65,6 +65,7 @@ src/
     FacturaForm.tsx       Formulario de factura (lineas, impuestos, totales, numeracion)
     CompraForm.tsx        Formulario de factura de compra a proveedor
     NotaForm.tsx          Formulario de nota credito/debito
+    UsuarioForm.tsx       Alta/edicion de usuario (rol, tipo, contrasena opcional al editar)
     InvoicePreview.tsx    Vista previa e impresion (PDF) de factura
     NotaPreview.tsx       Vista previa e impresion (PDF) de nota
     PagoModal.tsx         Registro de abonos (cartera)
@@ -77,13 +78,13 @@ src/
     Toast.tsx             Notificaciones (exito/error/info)
   pages/
     LoginPage.tsx         Inicio de sesion (dos paneles)
-    DashboardPage.tsx     KPIs financieros + accesos rapidos
+    DashboardPage.tsx     KPIs financieros + graficas + accesos rapidos
     ResourcePage.tsx      Pagina generica por modulo (tabla + form + acciones)
 ```
 
 ## Sistema de modulos declarativo (config-driven)
 
-La mayoria de las pantallas no tienen codigo propio: se generan desde `src/config/resources.ts`. Cada modulo define:
+La mayoria de mis pantallas no tienen codigo propio: las genero desde `src/config/resources.ts`. Cada modulo lo defino asi:
 
 ```ts
 {
@@ -92,7 +93,7 @@ La mayoria de las pantallas no tienen codigo propio: se generan desde `src/confi
   singular: "Cliente",
   icon: "fa-solid fa-users",
   readOnly: false,          // si true, sin Nuevo/editar/eliminar
-  noCreate: false,          // si true, permite editar/eliminar pero oculta "Nuevo" (p. ej. usuarios)
+  noCreate: false,          // si true, permito editar/eliminar pero oculto "Nuevo"
   fields: [
     { name: "correoCliente", label: "Correo", type: "text", section: "Contacto" },
     { name: "estadoCliente", label: "Activo", type: "boolean" },
@@ -101,11 +102,13 @@ La mayoria de las pantallas no tienen codigo propio: se generan desde `src/confi
 }
 ```
 
-Tipos de campo soportados por `FormField`: `text`, `number`, `date`, `boolean` (interruptor), `select` (opciones fijas), `reference` (dropdown poblado por un endpoint) y `multireference` (chips multi-seleccion). Opciones de campo: `optional`, `hideInTable`, `hideInForm`, `section`.
+Tipos de campo que soporto en `FormField`: `text`, `number`, `date`, `boolean` (interruptor), `select` (opciones fijas), `reference` (dropdown poblado por un endpoint) y `multireference` (chips multi-seleccion). Opciones de campo: `optional`, `hideInTable`, `hideInForm`, `section`.
 
-`ResourcePage` lee la config, hace `GET /<key>` para la tabla, construye las columnas del `DataTable`, y abre `ResourceForm` para crear/editar. Los modulos con formularios complejos (facturas, compras, notas) se atienden con componentes propios; reportes se atiende con `ReportsView`.
+`ResourcePage` lee la config, hace `GET /<key>` para la tabla, construye las columnas del `DataTable` y abre `ResourceForm` para crear/editar. Los modulos con formularios complejos (facturas, compras, notas, usuarios) los atiendo con componentes propios; los reportes con `ReportsView`.
 
 ## Cliente API (`api/client.ts`)
+
+Mi cliente HTTP:
 
 - Guarda `accessToken`, `refreshToken` y el usuario en `localStorage`.
 - Agrega `Authorization: Bearer <token>` a cada peticion.
@@ -115,14 +118,14 @@ Tipos de campo soportados por `FormField`: `text`, `number`, `date`, `boolean` (
 
 ## Documentos con formulario propio
 
-- Factura (`FacturaForm`): selecciona cliente, agrega articulos (autocomplete de producto), descuentos por linea, calcula subtotal/IVA/retenciones/total en vivo, toma el siguiente numero del backend. Persiste `idProducto` por linea para el inventario.
+- Factura (`FacturaForm`): selecciono cliente, agrego articulos (autocomplete de producto), descuentos por linea, calculo subtotal/IVA/retenciones/total en vivo y tomo el siguiente numero del backend. Persisto `idProducto` por linea para el inventario.
 - Compra (`CompraForm`): igual pero contra un proveedor; el IVA es descontable y el numero lo provee el proveedor.
 - Nota credito/debito (`NotaForm`): referencia una factura origen, toma el cliente y sus impuestos de esa factura, motivo y numeracion por tipo.
 - Vista previa / PDF (`InvoicePreview`, `NotaPreview`): documento imprimible con encabezado de empresa, cliente, lineas, desglose de impuestos, total y pie con la resolucion DIAN. La impresion abre una ventana con estilos propios para guardar como PDF.
 
 ## Cartera y reportes
 
-- `PagoModal`: registra abonos contra una factura (POST `/pagos`) y muestra el historial; el saldo y el estado se actualizan en el backend.
+- `PagoModal`: registro abonos contra una factura (POST `/pagos`) y muestro el historial; el saldo y el estado los actualiza el backend.
 - `EstadoCuentaModal`: estado de cuenta por cliente (`/reportes/estado-cuenta/:id`).
 - `ReportsView` (menu Reportes): ventas por periodo (`/reportes/ventas`) y cartera por cobrar (`/reportes/cartera`).
 - `DashboardPage`: KPIs de ventas del anio y cartera pendiente, graficas (ventas por mes, estado de cartera en dona, ventas vs compras) y accesos rapidos a los modulos.
@@ -130,16 +133,16 @@ Tipos de campo soportados por `FormField`: `text`, `number`, `date`, `boolean` (
 ## Contabilidad, conciliacion y usuarios
 
 - Plan de cuentas (`cuentas`, menu Contable): CRUD del PUC con el formulario generico.
-- Asientos (`asientos`): libro diario en solo lectura; los asientos los genera la API por partida doble desde los documentos. El boton de ver abre `AsientoView` con los movimientos debito/credito y el indicador de cuadre.
-- Conciliacion (`conciliacion`): el boton "Conciliar" abre `ConciliacionDetalle`, que carga las lineas del extracto, ejecuta el cruce contra el libro y muestra conciliados/pendientes y la diferencia.
-- Usuarios (`usuarios`, `noCreate`): se editan y se bloquean/desbloquean (candado) desde la tabla; el rol se elige de un dropdown de roles. El alta de usuarios tiene flujo propio (persona + tipo) y no usa el form generico.
-- Roles (`roles`): el campo de permisos es un multiselect poblado por `GET /roles/permisos` (catalogo del backend), no texto libre.
+- Asientos (`asientos`): libro diario en solo lectura; los asientos los genera mi API por partida doble desde los documentos. El boton de ver abre `AsientoView` con los movimientos debito/credito y el indicador de cuadre.
+- Conciliacion (`conciliacion`): con el boton "Conciliar" abro `ConciliacionDetalle`, donde cargo las lineas del extracto, ejecuto el cruce contra el libro y veo conciliados/pendientes y la diferencia.
+- Usuarios (`usuarios`): los creo, edito y bloqueo/desbloqueo (candado) desde la tabla, con `UsuarioForm`. El rol lo elijo de un dropdown de roles; la contrasena es obligatoria al crear y opcional al editar; el login rechaza a los usuarios bloqueados.
+- Roles (`roles`): el campo de permisos es un multiselect que pueblo con `GET /roles/permisos` (catalogo del backend), no texto libre.
 
 ## Tema
 
-El tema vive en variables CSS (`:root` oscuro por defecto, `:root[data-theme="light"]` claro estilo Siigo) y un tema MUI dinamico (`theme.ts`). El interruptor del sidebar alterna ambos y persiste la preferencia. La interfaz usa iconos Font Awesome; no se usan emojis.
+Mi tema vive en variables CSS (`:root` oscuro por defecto, `:root[data-theme="light"]` claro estilo Siigo) y un tema MUI dinamico (`theme.ts`). El interruptor del sidebar alterna ambos y persiste la preferencia. Uso iconos Font Awesome; no uso emojis.
 
 ## Notas
 
-- La API debe estar accesible en `VITE_API_URL`. El origen `http://localhost:5173` ya esta permitido por el CORS de la API.
+- Necesito la API accesible en `VITE_API_URL`. El origen `http://localhost:5173` ya esta permitido por el CORS de la API.
 - El modulo `personas` no tiene pantalla porque la API solo expone `POST` (sin listado).

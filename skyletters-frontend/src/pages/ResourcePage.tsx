@@ -13,6 +13,7 @@ import PagoModal from "../components/PagoModal";
 import EstadoCuentaModal from "../components/EstadoCuentaModal";
 import AsientoView from "../components/AsientoView";
 import ConciliacionDetalle from "../components/ConciliacionDetalle";
+import UsuarioForm from "../components/UsuarioForm";
 import ReportsView from "../components/ReportsView";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { useToast } from "../components/Toast";
@@ -318,6 +319,12 @@ export default function ResourcePage() {
           />
         ) : resource.key === "compras" ? (
           <CompraForm
+            initial={editing}
+            onCancel={() => setEditing(undefined)}
+            onSubmit={handleSubmit}
+          />
+        ) : resource.key === "usuarios" ? (
+          <UsuarioForm
             initial={editing}
             onCancel={() => setEditing(undefined)}
             onSubmit={handleSubmit}

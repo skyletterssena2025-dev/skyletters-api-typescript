@@ -1,37 +1,37 @@
 import { z } from "zod";
 
-const baseUsuario = {
-  nombreUsuario: z.string().min(1),
-  correoUsuario: z.string().email(),
-  contrasenaUsuario: z.string().min(6),
-  rolUsuario: z.string().min(1),
-  estadoUsuario: z.boolean().optional(),
-};
+// Datos opcionales de la persona asociada al usuario.
+const personaSchema = z
+  .object({
+    nombrePersona: z.string().min(1),
+    apellidoPersona: z.string().min(1),
+    correoPersona: z.string().email().optional(),
+    direccionPersona: z.string().optional(),
+    telefonoPersona: z.string().optional(),
+    generoPersona: z.string().optional(),
+    fechaNacimientoPersona: z.string().optional(),
+  })
+  .optional();
 
 export const createUsuarioSchema = z.object({
-  body: z.discriminatedUnion("tipoUsuario", [
-    z.object({
-      ...baseUsuario,
-      tipoUsuario: z.literal("admin"),
-      nivelConfidencialidad: z.string(),
-      permisosAdmin: z.string(),
-    }),
-    z.object({
-      ...baseUsuario,
-      tipoUsuario: z.literal("cont"),
-      areaContable: z.string(),
-      fechaIngreso: z.coerce.date(),
-      estadoUsuarioCont: z.boolean().optional(),
-    }),
-    z.object({
-      ...baseUsuario,
-      tipoUsuario: z.literal("aux"),
-      areaContable: z.string(),
-      fechaIngreso: z.coerce.date(),
-      tarjetaUsuarioAux: z.number(),
-      estadoUsuarioAux: z.boolean().optional(),
-    }),
-  ]),
+  body: z.object({
+    // Nucleo requerido (suficiente para crear un usuario funcional).
+    nombreUsuario: z.string().min(1, "El nombre es requerido"),
+    correoUsuario: z.string().email("Correo invalido"),
+    contrasenaUsuario: z.string().min(6, "La contrasena debe tener al menos 6 caracteres"),
+    rolUsuario: z.string().min(1, "El rol es requerido"),
+    tipoUsuario: z.enum(["admin", "cont", "aux"]),
+    estadoUsuario: z.coerce.boolean().optional(),
+    // Persona y campos del subtipo: opcionales (se usan si vienen, si no se aplican defaults).
+    persona: personaSchema,
+    nivelConfidencialidad: z.string().optional(),
+    permisosAdmin: z.string().optional(),
+    areaContable: z.string().optional(),
+    fechaIngreso: z.coerce.date().optional(),
+    tarjetaUsuarioAux: z.coerce.number().optional(),
+    estadoUsuarioCont: z.coerce.boolean().optional(),
+    estadoUsuarioAux: z.coerce.boolean().optional(),
+  }),
 });
 
 export const updateUsuarioSchema = z.object({
