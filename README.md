@@ -7,6 +7,22 @@ Este es mi sistema contable y de facturacion para Colombia (DIAN). Lo organice c
 
 En cada subproyecto dejo su propio `README.md` con el detalle de arquitectura, modulos y endpoints. Este archivo es mi guia rapida del repositorio.
 
+## Stack tecnologico
+
+**Backend** (`skyletters-api-typescript/`):
+
+- **Framework:** [Express](https://expressjs.com/) (Node.js + TypeScript)
+- **ORM:** [Prisma](https://www.prisma.io/) sobre MySQL 8
+- Librerias de soporte: `zod` (validacion), `jsonwebtoken` + `bcryptjs` (auth), `winston` (logging), `swagger-ui-express` (docs), `express-rate-limit`, `cors`
+
+**Frontend** (`skyletters-frontend/`):
+
+- **Libreria de UI:** [React](https://react.dev/) — no es un framework, es una libreria de componentes; el resto del stack (routing, build) lo aporto yo con piezas separadas.
+- **Empaquetador/dev server:** [Vite](https://vite.dev/)
+- **Framework de componentes UI:** [Material UI](https://mui.com/) (`@mui/material`, `@mui/x-data-grid`)
+- **Routing:** `react-router-dom`
+- Lenguaje: TypeScript
+
 ## Funcionalidad
 
 Lo que cubro con el sistema:

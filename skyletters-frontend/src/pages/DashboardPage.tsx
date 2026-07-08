@@ -53,6 +53,7 @@ export default function DashboardPage() {
     });
 
     (async () => {
+      
       // Datos base: facturas del anio y compras (para agregaciones de graficas).
       const [ventasRep, cartera, facturas, compras, clientes] = await Promise.all([
         api<any>(`/reportes/ventas?desde=${year}-01-01&fin=${year}-12-31`).catch(() => null),

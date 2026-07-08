@@ -176,12 +176,14 @@ export default function CompraForm({ initial, onCancel, onSubmit }: Props) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    const validItems = items.filter((it) => it.nombre.trim() && it.cantidad > 0);
+
+        const validItems = items.filter((it) => it.nombre.trim() && it.cantidad > 0);
     if (!idProveedor) return setError("Selecciona un proveedor.");
     if (!numeroFactura.trim()) return setError("Ingresa el N° de factura del proveedor.");
     if (validItems.length === 0) return setError("Agrega al menos un artículo.");
     setSaving(true);
     try {
+      
       const detalles = validItems.map((it) => ({
         nombre: it.nombre,
         idProducto: it.idProducto ? Number(it.idProducto) : null,

@@ -25,7 +25,8 @@ export default function ReportsView() {
     try {
       const data = await api<any>(`/reportes/ventas?desde=${d}&fin=${f}`);
       setVentas(data);
-    } catch {
+    } catch(ex) {
+      console.error("Error al consultar ventas:", ex);
       setVentas(null);
     } finally {
       setLoadingV(false);
